@@ -23,7 +23,13 @@ async function buscar(caminho) {
   return r.json();
 }
 
+// cores dos gráficos vêm do CSS, então mudam junto com o tema
+const cor = (nome) => getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+const transparente = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, "0");
+
 function desenhar(id, config) {
+  Chart.defaults.color = cor("--suave");
+  Chart.defaults.borderColor = cor("--grade");
   if (graficos[id]) graficos[id].destroy();
   graficos[id] = new Chart(document.getElementById(id), config);
 }
@@ -84,16 +90,16 @@ function graficoCurva(dados) {
       labels,
       datasets: [
         { label: "Casos notificados", data: [...obs.map((o) => o.notificados), ...vazio(prev.length)],
-          borderColor: "#2563eb", borderWidth: 2, pointRadius: 0, tension: 0.2 },
+          borderColor: cor("--serie-azul"), borderWidth: 2, pointRadius: 0, tension: 0.2 },
         { label: "Estimativa InfoDengue (atraso de notificação)",
           data: [...obs.map((o) => o.estimados), ...vazio(prev.length)],
-          borderColor: "#60a5fa", borderDash: [2, 3], borderWidth: 2, pointRadius: 0, tension: 0.2 },
+          borderColor: cor("--serie-azul-2"), borderDash: [2, 3], borderWidth: 2, pointRadius: 0, tension: 0.2 },
         { label: "Previsão do nosso modelo", data: [...vazio(obs.length - 1), ultimo, ...prev.map((p) => p.previstos)],
-          borderColor: "#dc2626", borderDash: [6, 4], borderWidth: 2, pointRadius: 3 },
+          borderColor: cor("--serie-vermelha"), borderDash: [6, 4], borderWidth: 2, pointRadius: 3 },
         { label: "Mínimo", data: [...vazio(obs.length), ...prev.map((p) => p.minimo)],
           borderColor: "transparent", pointRadius: 0 },
         { label: "Máximo", data: [...vazio(obs.length), ...prev.map((p) => p.maximo)],
-          borderColor: "transparent", backgroundColor: "rgba(220,38,38,0.15)", fill: "-1", pointRadius: 0 },
+          borderColor: "transparent", backgroundColor: transparente(cor("--serie-vermelha"), 0.15), fill: "-1", pointRadius: 0 },
       ],
     },
     options: {
@@ -111,9 +117,9 @@ function graficoChuva(dados) {
       labels: dados.map((d) => fmtData(d.semana_inicio)),
       datasets: [
         { type: "bar", label: "Chuva (mm)", data: dados.map((d) => d.chuva_mm),
-          backgroundColor: "rgba(37,99,235,0.35)", yAxisID: "chuva" },
+          backgroundColor: transparente(cor("--serie-azul"), 0.35), yAxisID: "chuva" },
         { type: "line", label: "Casos (estimativa InfoDengue)", data: dados.map((d) => d.casos),
-          borderColor: "#dc2626", borderWidth: 2, pointRadius: 0, tension: 0.2, yAxisID: "casos" },
+          borderColor: cor("--serie-vermelha"), borderWidth: 2, pointRadius: 0, tension: 0.2, yAxisID: "casos" },
       ],
     },
     options: {
@@ -145,13 +151,46 @@ function graficoAnual(dados) {
       datasets: [{
         label: "Casos notificados",
         data: dados.map((d) => d.casos),
-        backgroundColor: dados.map((d) => (d.parcial ? "rgba(37,99,235,0.35)" : "#2563eb")),
+        backgroundColor: dados.map((d) => (d.parcial ? transparente(cor("--serie-azul"), 0.35) : cor("--serie-azul"))),
       }],
     },
     options: { maintainAspectRatio: false, plugins: { legend: { display: false } },
                scales: { y: { beginAtZero: true } } },
   });
 }
+
+let ultimosDados = null;
+
+function desenharGraficos() {
+  if (!ultimosDados) return;
+  graficoCurva(ultimosDados.curva);
+  graficoChuva(ultimosDados.chuva);
+  graficoAnual(ultimosDados.anual);
+}
+
+// ---------- tema claro/escuro ----------
+const botaoTema = document.getElementById("tema");
+
+function aplicarTema(tema) {
+  document.documentElement.dataset.tema = tema;
+  botaoTema.setAttribute("aria-checked", String(tema === "escuro"));
+  desenharGraficos(); // os gráficos são canvas: precisam ser redesenhados com as cores novas
+}
+
+botaoTema.addEventListener("click", () => {
+  const novo = document.documentElement.dataset.tema === "escuro" ? "claro" : "escuro";
+  try { localStorage.setItem("tema", novo); } catch (e) {}
+  aplicarTema(novo);
+});
+
+// sem escolha salva, acompanha o tema do sistema
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+  let salvo = null;
+  try { salvo = localStorage.getItem("tema"); } catch (err) {}
+  if (!salvo) aplicarTema(e.matches ? "escuro" : "claro");
+});
+
+botaoTema.setAttribute("aria-checked", String(document.documentElement.dataset.tema === "escuro"));
 
 async function carregar() {
   const doenca = document.querySelector('input[name="doenca"]:checked').value;
@@ -164,10 +203,9 @@ async function carregar() {
       buscar(`/clima-vs-casos?doenca=${doenca}&desde=${doisAnosAtras}`),
       buscar(`/anual?doenca=${doenca}`),
     ]);
+    ultimosDados = { curva, chuva, anual };
     preencherKpis(resumo);
-    graficoCurva(curva);
-    graficoChuva(chuva);
-    graficoAnual(anual);
+    desenharGraficos();
   } catch (e) {
     console.error(e);
     alert("Não consegui carregar os dados. A API está no ar e o ETL já rodou?");
