@@ -1,0 +1,100 @@
+:root {
+  --fundo: #f6f7f9;
+  --cartao: #ffffff;
+  --texto: #1d2433;
+  --suave: #5f6b7a;
+  --borda: #e3e6eb;
+  --azul: #2563eb;
+  --verde: #16a34a;
+  --amarelo: #eab308;
+  --laranja: #f97316;
+  --vermelho: #dc2626;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 32px;
+  background: var(--cartao);
+  border-bottom: 1px solid var(--borda);
+}
+h1 { margin: 0; font-size: 1.4rem; }
+.sub { margin: 4px 0 0; color: var(--suave); font-size: .9rem; }
+select {
+  font-size: 1rem;
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--cartao);
+}
+
+main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi {
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kpi.destaque { border-left: 4px solid var(--azul); }
+.kpi strong { font-size: 2rem; }
+.rotulo { color: var(--suave); font-size: .85rem; }
+.detalhe { color: var(--suave); font-size: .85rem; }
+
+.kpi.nivel-verde    { border-left: 4px solid var(--verde); }
+.kpi.nivel-amarelo  { border-left: 4px solid var(--amarelo); }
+.kpi.nivel-laranja  { border-left: 4px solid var(--laranja); }
+.kpi.nivel-vermelho { border-left: 4px solid var(--vermelho); }
+.nivel-verde strong    { color: var(--verde); }
+.nivel-amarelo strong  { color: #a16207; }
+.nivel-laranja strong  { color: var(--laranja); }
+.nivel-vermelho strong { color: var(--vermelho); }
+
+.painel {
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.painel h2 { margin: 0; font-size: 1.1rem; }
+.legenda { margin: 4px 0 12px; color: var(--suave); font-size: .85rem; }
+.grafico { position: relative; height: 320px; }
+
+.duas-colunas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 24px;
+}
+
+footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px 32px;
+  color: var(--suave);
+  font-size: .8rem;
+}
+
+@media (max-width: 600px) {
+  header, main, footer { padding-left: 16px; padding-right: 16px; }
+  .duas-colunas { grid-template-columns: 1fr; }
+}

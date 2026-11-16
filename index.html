@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observatório de Arboviroses · Salvador</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Observatório de Arboviroses</h1>
+      <p class="sub">Salvador (BA) · atualizado toda semana</p>
+    </div>
+    <select id="doenca" aria-label="Doença">
+      <option value="dengue">Dengue</option>
+      <option value="chikungunya">Chikungunya</option>
+      <option value="zika">Zika</option>
+    </select>
+  </header>
+
+  <main>
+    <section class="kpis">
+      <article class="kpi destaque">
+        <span class="rotulo">Casos previstos nas próximas 4 semanas</span>
+        <strong id="kpi-previsao">–</strong>
+        <span class="detalhe" id="kpi-previsao-faixa"></span>
+      </article>
+      <article class="kpi">
+        <span class="rotulo">Casos na última semana</span>
+        <strong id="kpi-semana">–</strong>
+        <span class="detalhe" id="kpi-semana-comparacao"></span>
+      </article>
+      <article class="kpi">
+        <span class="rotulo">Incidência</span>
+        <strong id="kpi-incidencia">–</strong>
+        <span class="detalhe" id="kpi-incidencia-texto"></span>
+      </article>
+      <article class="kpi" id="kpi-alerta-card">
+        <span class="rotulo">Nível de alerta</span>
+        <strong id="kpi-alerta">–</strong>
+        <span class="detalhe" id="kpi-acao"></span>
+      </article>
+    </section>
+
+    <section class="painel">
+      <h2>Casos por semana: o que aconteceu e o que vem</h2>
+      <p class="legenda">Linha cheia = casos registrados · tracejada = previsão, com a faixa de incerteza</p>
+      <div class="grafico"><canvas id="graf-curva"></canvas></div>
+    </section>
+
+    <div class="duas-colunas">
+      <section class="painel">
+        <h2>Os casos sobem semanas depois da chuva</h2>
+        <p class="legenda">Barras = chuva da semana (mm) · linha = casos</p>
+        <div class="grafico"><canvas id="graf-chuva"></canvas></div>
+      </section>
+      <section class="painel">
+        <h2>Casos por ano</h2>
+        <p class="legenda">Total de casos notificados em Salvador</p>
+        <div class="grafico"><canvas id="graf-anual"></canvas></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Fontes: InfoDengue (Fiocruz/FGV), Open-Meteo. Dados agregados por cidade e semana,
+    sem nenhuma informação pessoal (LGPD). Trabalho A3 · Análise de Dados e Big Data · UNIFACS.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
