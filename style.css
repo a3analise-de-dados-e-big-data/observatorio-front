@@ -21,21 +21,58 @@ body {
 }
 
 header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 32px;
   background: var(--cartao);
   border-bottom: 1px solid var(--borda);
 }
-h1 { margin: 0; font-size: 1.4rem; }
-.sub { margin: 4px 0 0; color: var(--suave); font-size: .9rem; }
-select {
-  font-size: 1rem;
-  padding: 8px 12px;
-  border: 1px solid var(--borda);
-  border-radius: 8px;
+/* título | abas no centro | data dos dados — alinhado com a largura do main */
+.cabecalho {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+}
+h1 { margin: 0; font-size: 1.25rem; }
+.sub { margin: 2px 0 0; color: var(--suave); font-size: .85rem; }
+.atualizacao { margin: 0; justify-self: end; color: var(--suave); font-size: .8rem; text-align: right; }
+
+/* controle segmentado: rádios escondidos, a aba marcada vira um "botão" branco */
+.abas {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: #eceef2;
+}
+.abas label { cursor: pointer; }
+.abas input { position: absolute; opacity: 0; pointer-events: none; }
+.abas span {
+  display: block;
+  padding: 7px 18px;
+  border-radius: 7px;
+  font-size: .9rem;
+  font-weight: 500;
+  color: var(--suave);
+  transition: background-color .15s, color .15s, box-shadow .15s;
+}
+.abas label:hover span { color: var(--texto); }
+.abas input:checked + span {
   background: var(--cartao);
+  color: var(--texto);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .12), 0 0 0 1px rgba(16, 24, 40, .04);
+}
+.abas input:focus-visible + span { outline: 2px solid var(--azul); outline-offset: 2px; }
+
+.so-leitor {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
@@ -46,28 +83,77 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
   gap: 16px;
   margin-bottom: 24px;
 }
+/* ---------- KPIs: todos com o mesmo esqueleto ---------- */
 .kpi {
   background: var(--cartao);
   border: 1px solid var(--borda);
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 18px 20px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
-.kpi.destaque { border-left: 4px solid var(--azul); }
-.kpi strong { font-size: 2rem; }
-.rotulo { color: var(--suave); font-size: .85rem; }
-.detalhe { color: var(--suave); font-size: .85rem; }
+.kpi p { margin: 0; }
+.kpi-rotulo {
+  margin: 0;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kpi .kpi-valor {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 8px 0 10px;
+}
+.kpi-valor strong {
+  font-size: 2.25rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.kpi-valor span { font-size: .85rem; color: var(--suave); }
+.kpi-contexto { font-size: .8rem; line-height: 1.4; color: var(--texto); }
+.kpi .kpi-contexto + .kpi-contexto,
+.kpi .kpi-atraso + .kpi-contexto { margin-top: 4px; }
+.kpi-contexto .suave { color: var(--suave); }
+/* rodapé com a fonte, sempre colado embaixo pra alinhar os quatro cards */
+.kpi .kpi-fonte {
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: .72rem;
+  color: var(--suave);
+}
+.kpi-fonte::before {
+  content: "";
+  display: block;
+  border-top: 1px solid var(--borda);
+  margin-bottom: 10px;
+}
 
-.kpi.nivel-verde    { border-left: 4px solid var(--verde); }
-.kpi.nivel-amarelo  { border-left: 4px solid var(--amarelo); }
-.kpi.nivel-laranja  { border-left: 4px solid var(--laranja); }
-.kpi.nivel-vermelho { border-left: 4px solid var(--vermelho); }
-.nivel-verde strong    { color: var(--verde); }
-.nivel-amarelo strong  { color: #a16207; }
-.nivel-laranja strong  { color: var(--laranja); }
-.nivel-vermelho strong { color: var(--vermelho); }
+/* barra "quanto da semana já foi notificado" */
+.trilho {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--azul) 18%, white);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.trilho-preenchido { height: 100%; border-radius: 3px; background: var(--azul); }
+
+/* escala de 4 níveis do alerta: preenche até o nível atual com a cor dele */
+.escala { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin-bottom: 8px; }
+.escala i { height: 6px; border-radius: 3px; background: var(--borda); }
+.kpi[data-nivel="1"] { --nivel: var(--verde); }
+.kpi[data-nivel="2"] { --nivel: var(--amarelo); }
+.kpi[data-nivel="3"] { --nivel: var(--laranja); }
+.kpi[data-nivel="4"] { --nivel: var(--vermelho); }
+.kpi[data-nivel="1"] .escala i:nth-child(-n+1),
+.kpi[data-nivel="2"] .escala i:nth-child(-n+2),
+.kpi[data-nivel="3"] .escala i:nth-child(-n+3),
+.kpi[data-nivel="4"] .escala i:nth-child(-n+4) { background: var(--nivel); }
 
 .painel {
   background: var(--cartao);
@@ -85,6 +171,10 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
   grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 24px;
 }
+/* os dois painéis lado a lado têm a mesma altura; o gráfico ocupa o espaço que sobra,
+   assim a base dos dois fica alinhada mesmo quando só um tem legenda embaixo do título */
+.duas-colunas .painel { display: flex; flex-direction: column; }
+.duas-colunas .grafico { flex: 1 0 auto; }
 
 footer {
   max-width: 1200px;
@@ -94,7 +184,16 @@ footer {
   font-size: .8rem;
 }
 
+@media (max-width: 760px) {
+  /* no celular: título em cima, abas ocupando a largura toda, data embaixo */
+  .cabecalho { grid-template-columns: 1fr; gap: 12px; }
+  .abas { display: flex; }
+  .abas label { flex: 1; text-align: center; }
+  .abas span { padding: 7px 8px; }
+  .atualizacao { justify-self: start; text-align: left; }
+}
+
 @media (max-width: 600px) {
-  header, main, footer { padding-left: 16px; padding-right: 16px; }
+  .cabecalho, main, footer { padding-left: 16px; padding-right: 16px; }
   .duas-colunas { grid-template-columns: 1fr; }
 }

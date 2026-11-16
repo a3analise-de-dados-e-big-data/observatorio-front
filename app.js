@@ -31,24 +31,43 @@ function desenhar(id, config) {
 function preencherKpis(r) {
   const p = r.previsao_4_semanas;
   document.getElementById("kpi-previsao").textContent = fmt(p.total);
-  document.getElementById("kpi-previsao-faixa").textContent =
-    p.total ? `entre ${fmt(p.minimo)} e ${fmt(p.maximo)}` : "previsão indisponível";
+  document.getElementById("kpi-previsao-faixa").innerHTML = p.total
+    ? `<span class="suave">Faixa provável:</span> ${fmt(p.minimo)} a ${fmt(p.maximo)}`
+    : "Previsão indisponível";
 
-  document.getElementById("kpi-semana").textContent = fmt(r.casos_semana);
+  // contagem real até agora; a estimativa do InfoDengue vai separada, com o nome dela
+  document.getElementById("atualizacao").textContent = `Dados até a semana de ${fmtData(r.semana_atual)}`;
+  const [, mes, dia] = r.semana_atual.split("-");
+  document.getElementById("kpi-semana-rotulo").textContent = `Notificados · semana de ${dia}/${mes}`;
+  const notif = r.casos_notificados_semana;
+  document.getElementById("kpi-semana").textContent = fmt(notif);
+
+  // barra: quanto da estimativa já foi notificado (as notificações chegam com atraso)
+  const est = r.estimativa_infodengue;
+  const temAtraso = est.casos != null && Math.round(est.casos) > notif;
+  document.getElementById("kpi-semana-atraso").hidden = !temAtraso;
+  if (temAtraso) {
+    const pct = Math.round((notif / est.casos) * 100);
+    document.getElementById("kpi-semana-barra").style.width = `${pct}%`;
+    document.getElementById("kpi-semana-trilho").setAttribute(
+      "aria-label", `${pct}% da estimativa já notificados`);
+    document.getElementById("kpi-semana-estimativa").innerHTML =
+      `<span class="suave">Deve fechar em</span> ~${fmt(est.casos)} <span class="suave">(${fmt(est.minimo)}–${fmt(est.maximo)})</span>`;
+  }
   const media = r.media_historica_semana;
-  document.getElementById("kpi-semana-comparacao").textContent = media
-    ? `média dessa semana nos anos anteriores: ${fmt(media)}`
-    : `semana de ${fmtData(r.semana_atual)}`;
+  document.getElementById("kpi-semana-comparacao").innerHTML = media
+    ? `<span class="suave">Média dessa semana em outros anos:</span> ${fmt(media)}`
+    : "";
 
-  // linguagem simples: "X a cada 100 mil moradores"
   document.getElementById("kpi-incidencia").textContent =
     r.incidencia_100k == null ? "–" : r.incidencia_100k.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
-  document.getElementById("kpi-incidencia-texto").textContent = "casos a cada 100 mil moradores";
 
+  // nível: nome + "nível X de 4" + escala; a cor nunca é a única pista
   const nivel = NIVEL_TEXTO[r.nivel_alerta] || NIVEL_TEXTO.indefinido;
-  const card = document.getElementById("kpi-alerta-card");
-  card.className = `kpi nivel-${r.nivel_alerta}`;
+  const numero = ["verde", "amarelo", "laranja", "vermelho"].indexOf(r.nivel_alerta) + 1;
+  document.getElementById("kpi-alerta-card").dataset.nivel = numero;
   document.getElementById("kpi-alerta").textContent = nivel.titulo;
+  document.getElementById("kpi-alerta-escala").textContent = numero ? `nível ${numero} de 4` : "";
   document.getElementById("kpi-acao").textContent = nivel.acao;
 }
 
@@ -64,9 +83,12 @@ function graficoCurva(dados) {
     data: {
       labels,
       datasets: [
-        { label: "Casos registrados", data: [...obs.map((o) => o.estimados), ...vazio(prev.length)],
+        { label: "Casos notificados", data: [...obs.map((o) => o.notificados), ...vazio(prev.length)],
           borderColor: "#2563eb", borderWidth: 2, pointRadius: 0, tension: 0.2 },
-        { label: "Previsão", data: [...vazio(obs.length - 1), ultimo, ...prev.map((p) => p.previstos)],
+        { label: "Estimativa InfoDengue (atraso de notificação)",
+          data: [...obs.map((o) => o.estimados), ...vazio(prev.length)],
+          borderColor: "#60a5fa", borderDash: [2, 3], borderWidth: 2, pointRadius: 0, tension: 0.2 },
+        { label: "Previsão do nosso modelo", data: [...vazio(obs.length - 1), ultimo, ...prev.map((p) => p.previstos)],
           borderColor: "#dc2626", borderDash: [6, 4], borderWidth: 2, pointRadius: 3 },
         { label: "Mínimo", data: [...vazio(obs.length), ...prev.map((p) => p.minimo)],
           borderColor: "transparent", pointRadius: 0 },
@@ -77,7 +99,7 @@ function graficoCurva(dados) {
     options: {
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
-      plugins: { legend: { labels: { filter: (i) => i.datasetIndex < 2 } } },
+      plugins: { legend: { labels: { filter: (i) => i.datasetIndex < 3 } } },
       scales: { x: { ticks: { maxTicksLimit: 12 } }, y: { beginAtZero: true } },
     },
   });
@@ -90,7 +112,7 @@ function graficoChuva(dados) {
       datasets: [
         { type: "bar", label: "Chuva (mm)", data: dados.map((d) => d.chuva_mm),
           backgroundColor: "rgba(37,99,235,0.35)", yAxisID: "chuva" },
-        { type: "line", label: "Casos", data: dados.map((d) => d.casos),
+        { type: "line", label: "Casos (estimativa InfoDengue)", data: dados.map((d) => d.casos),
           borderColor: "#dc2626", borderWidth: 2, pointRadius: 0, tension: 0.2, yAxisID: "casos" },
       ],
     },
@@ -98,7 +120,7 @@ function graficoChuva(dados) {
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
       scales: {
-        x: { ticks: { maxTicksLimit: 10 } },
+        x: { ticks: { maxTicksLimit: 8, maxRotation: 0 } },
         chuva: { position: "left", beginAtZero: true, title: { display: true, text: "Chuva (mm)" } },
         casos: { position: "right", beginAtZero: true, grid: { drawOnChartArea: false },
                  title: { display: true, text: "Casos" } },
@@ -108,11 +130,23 @@ function graficoChuva(dados) {
 }
 
 function graficoAnual(dados) {
+  // ano em andamento: barra mais clara e marcado com *, pra não parecer ano fechado
+  const parcial = dados.find((d) => d.parcial);
+  const legenda = document.getElementById("legenda-anual");
+  legenda.textContent = parcial
+    ? `*${parcial.ano} ainda em andamento (dados até a semana de ${fmtData(parcial.ultima_semana)})`
+    : "";
+  legenda.hidden = !parcial;
+
   desenhar("graf-anual", {
     type: "bar",
     data: {
-      labels: dados.map((d) => d.ano),
-      datasets: [{ label: "Casos", data: dados.map((d) => d.casos), backgroundColor: "#2563eb" }],
+      labels: dados.map((d) => (d.parcial ? `${d.ano}*` : d.ano)),
+      datasets: [{
+        label: "Casos notificados",
+        data: dados.map((d) => d.casos),
+        backgroundColor: dados.map((d) => (d.parcial ? "rgba(37,99,235,0.35)" : "#2563eb")),
+      }],
     },
     options: { maintainAspectRatio: false, plugins: { legend: { display: false } },
                scales: { y: { beginAtZero: true } } },
@@ -120,7 +154,7 @@ function graficoAnual(dados) {
 }
 
 async function carregar() {
-  const doenca = document.getElementById("doenca").value;
+  const doenca = document.querySelector('input[name="doenca"]:checked').value;
   const doisAnosAtras = new Date(Date.now() - 2 * 365 * 864e5).toISOString().slice(0, 10);
   const umAnoAtras = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
   try {

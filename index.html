@@ -9,63 +9,79 @@
 </head>
 <body>
   <header>
-    <div>
-      <h1>Observatório de Arboviroses</h1>
-      <p class="sub">Salvador (BA) · atualizado toda semana</p>
+    <div class="cabecalho">
+      <div>
+        <h1>Observatório de Arboviroses</h1>
+        <p class="sub">Salvador (BA) · atualizado toda semana</p>
+      </div>
+      <fieldset class="abas" id="doenca">
+        <legend class="so-leitor">Doença</legend>
+        <label><input type="radio" name="doenca" value="dengue" checked><span>Dengue</span></label>
+        <label><input type="radio" name="doenca" value="chikungunya"><span>Chikungunya</span></label>
+      </fieldset>
+      <p class="atualizacao" id="atualizacao"></p>
     </div>
-    <select id="doenca" aria-label="Doença">
-      <option value="dengue">Dengue</option>
-      <option value="chikungunya">Chikungunya</option>
-      <option value="zika">Zika</option>
-    </select>
   </header>
 
   <main>
     <section class="kpis">
-      <article class="kpi destaque">
-        <span class="rotulo">Casos previstos nas próximas 4 semanas</span>
-        <strong id="kpi-previsao">–</strong>
-        <span class="detalhe" id="kpi-previsao-faixa"></span>
-      </article>
       <article class="kpi">
-        <span class="rotulo">Casos na última semana</span>
-        <strong id="kpi-semana">–</strong>
-        <span class="detalhe" id="kpi-semana-comparacao"></span>
+        <h2 class="kpi-rotulo">Previsão · próximas 4 semanas</h2>
+        <p class="kpi-valor"><strong id="kpi-previsao">–</strong><span>casos</span></p>
+        <p class="kpi-contexto" id="kpi-previsao-faixa"></p>
+        <p class="kpi-fonte">Modelo do grupo</p>
       </article>
+
       <article class="kpi">
-        <span class="rotulo">Incidência</span>
-        <strong id="kpi-incidencia">–</strong>
-        <span class="detalhe" id="kpi-incidencia-texto"></span>
+        <h2 class="kpi-rotulo" id="kpi-semana-rotulo">Notificados na semana</h2>
+        <p class="kpi-valor"><strong id="kpi-semana">–</strong><span>casos</span></p>
+        <div class="kpi-atraso" id="kpi-semana-atraso" hidden>
+          <div class="trilho" role="img" id="kpi-semana-trilho"><div class="trilho-preenchido" id="kpi-semana-barra"></div></div>
+          <p class="kpi-contexto" id="kpi-semana-estimativa"></p>
+        </div>
+        <p class="kpi-contexto" id="kpi-semana-comparacao"></p>
+        <p class="kpi-fonte">InfoDengue</p>
       </article>
-      <article class="kpi" id="kpi-alerta-card">
-        <span class="rotulo">Nível de alerta</span>
-        <strong id="kpi-alerta">–</strong>
-        <span class="detalhe" id="kpi-acao"></span>
+
+      <article class="kpi">
+        <h2 class="kpi-rotulo">Incidência estimada</h2>
+        <p class="kpi-valor"><strong id="kpi-incidencia">–</strong><span>por 100 mil hab.</span></p>
+        <p class="kpi-contexto">Calculada sobre a estimativa da semana</p>
+        <p class="kpi-fonte">InfoDengue</p>
+      </article>
+
+      <article class="kpi" id="kpi-alerta-card" data-nivel="0">
+        <h2 class="kpi-rotulo">Nível de alerta</h2>
+        <p class="kpi-valor"><strong id="kpi-alerta">–</strong><span id="kpi-alerta-escala"></span></p>
+        <div class="escala" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <p class="kpi-contexto" id="kpi-acao"></p>
+        <p class="kpi-fonte">InfoDengue · ação sugerida pelo grupo</p>
       </article>
     </section>
 
     <section class="painel">
       <h2>Casos por semana: o que aconteceu e o que vem</h2>
-      <p class="legenda">Linha cheia = casos registrados · tracejada = previsão, com a faixa de incerteza</p>
       <div class="grafico"><canvas id="graf-curva"></canvas></div>
     </section>
 
     <div class="duas-colunas">
       <section class="painel">
         <h2>Os casos sobem semanas depois da chuva</h2>
-        <p class="legenda">Barras = chuva da semana (mm) · linha = casos</p>
         <div class="grafico"><canvas id="graf-chuva"></canvas></div>
       </section>
       <section class="painel">
         <h2>Casos por ano</h2>
-        <p class="legenda">Total de casos notificados em Salvador</p>
+        <p class="legenda" id="legenda-anual" hidden></p>
         <div class="grafico"><canvas id="graf-anual"></canvas></div>
       </section>
     </div>
   </main>
 
   <footer>
-    Fontes: InfoDengue (Fiocruz/FGV), Open-Meteo. Dados agregados por cidade e semana,
+    Fontes: casos, estimativas e nível de alerta do InfoDengue (Fiocruz/FGV). Zika não aparece porque o
+    InfoDengue parou de publicar a série de Salvador em fevereiro de 2024. Chuva e temperatura
+    da reanálise ERA5 (Copernicus), obtidas pelo Open-Meteo. A previsão de 4 semanas é de um modelo
+    próprio (regressão linear sobre casos, chuva e temperatura). Dados agregados por cidade e semana,
     sem nenhuma informação pessoal (LGPD). Trabalho A3 · Análise de Dados e Big Data · UNIFACS.
   </footer>
 
