@@ -308,6 +308,23 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
 .calor-ano { align-self: center; }
 .calor-semana { text-align: center; }
 
+/* mapa da RMS + tabela ao lado */
+.rms {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+  align-items: start;
+}
+#mapa-rms { width: 100%; height: auto; max-height: 460px; }
+#mapa-rms path { fill: var(--c); stroke: var(--cartao); stroke-width: 1.5; stroke-linejoin: round; }
+#mapa-rms path:hover { stroke: var(--texto); }
+.tabela-rms { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.tabela-rms caption { text-align: left; color: var(--suave); font-size: .78rem; padding-bottom: 6px; }
+.tabela-rms th { text-align: left; font-weight: 500; color: var(--suave); border-bottom: 1px solid var(--borda); padding: 4px 6px; }
+.tabela-rms td { padding: 4px 6px; border-bottom: 1px solid var(--borda); }
+.tabela-rms th:not(:first-child), .tabela-rms td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.tabela-rms td i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; background: var(--c); }
+
 .legenda-cores {
   display: flex;
   flex-wrap: wrap;
@@ -341,4 +358,5 @@ footer {
 @media (max-width: 600px) {
   .cabecalho, main, footer { padding-left: 16px; padding-right: 16px; }
   .duas-colunas { grid-template-columns: 1fr; }
+  .rms { grid-template-columns: 1fr; }
 }

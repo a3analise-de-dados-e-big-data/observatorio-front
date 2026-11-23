@@ -117,6 +117,20 @@
       </div>
       <div class="legenda-cores" id="legenda-calor"></div>
     </section>
+
+    <section class="painel" id="painel-rms" hidden>
+      <h2>Região Metropolitana: incidência nas últimas 4 semanas</h2>
+      <p class="legenda" id="legenda-rms"></p>
+      <div class="rms">
+        <svg id="mapa-rms" role="img" aria-labelledby="tabela-rms-titulo"></svg>
+        <table class="tabela-rms">
+          <caption id="tabela-rms-titulo">Incidência por município, maior primeiro</caption>
+          <thead><tr><th scope="col">Município</th><th scope="col">Por 100 mil</th><th scope="col">Casos est.</th></tr></thead>
+          <tbody id="tabela-rms"></tbody>
+        </table>
+      </div>
+      <div class="legenda-cores" id="legenda-cores-rms"></div>
+    </section>
   </main>
 
   <footer>
@@ -124,7 +138,7 @@
     InfoDengue parou de publicar a série de Salvador em fevereiro de 2024. Chuva e temperatura
     da reanálise ERA5 (Copernicus), obtidas pelo Open-Meteo. A previsão de 4 semanas é de um modelo
     próprio (regressão linear sobre casos, chuva e temperatura). Dados agregados por cidade e semana,
-    sem nenhuma informação pessoal (LGPD). Trabalho A3 · Análise de Dados e Big Data · UNIFACS.
+    sem nenhuma informação pessoal (LGPD). Malha municipal do IBGE. Trabalho A3 · Análise de Dados e Big Data · UNIFACS.
   </footer>
 
   <script src="app.js"></script>

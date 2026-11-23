@@ -274,6 +274,50 @@ function mapaCalor(dados) {
   legendaCores("legenda-calor", FAIXAS_CALOR, "casos por 100 mil hab. na semana");
 }
 
+const FAIXAS_RMS = [5, 15, 30, 60, 120]; // incidência somada em 4 semanas, por 100 mil hab.
+
+// malha dos 13 municípios (GeoJSON do IBGE, em rms.geojson): baixa uma vez só
+let malhaRms = null;
+const carregarMalha = () => (malhaRms ||= fetch("rms.geojson").then((r) => r.json()).catch(() => (malhaRms = null)));
+
+function mapaRms(dados, malha) {
+  document.getElementById("painel-rms").hidden = !(dados && malha);
+  if (!dados || !malha) return;
+  const porGeocode = Object.fromEntries(dados.municipios.map((m) => [String(m.geocode), m]));
+  const valor = (m) => (m.incidencia_4sem == null ? "sem dado" : num1(m.incidencia_4sem));
+
+  // projeção simples (longitude x cos(latitude), latitude): numa área pequena como a RMS não distorce
+  const aneis = (f) => (f.geometry.type === "Polygon" ? f.geometry.coordinates : f.geometry.coordinates.flat());
+  const pontos = malha.features.flatMap((f) => aneis(f).flat());
+  const lons = pontos.map((p) => p[0]);
+  const lats = pontos.map((p) => p[1]);
+  const [lonMin, latMin, latMax] = [Math.min(...lons), Math.min(...lats), Math.max(...lats)];
+  const cosLat = Math.cos(((latMin + latMax) / 2) * Math.PI / 180);
+  const escala = 600 / ((Math.max(...lons) - lonMin) * cosLat); // 600 de largura
+  const xy = ([lon, lat]) => `${((lon - lonMin) * cosLat * escala).toFixed(1)},${((latMax - lat) * escala).toFixed(1)}`;
+
+  const svg = document.getElementById("mapa-rms");
+  svg.setAttribute("viewBox", `0 0 600 ${((latMax - latMin) * escala).toFixed(0)}`);
+  svg.innerHTML = malha.features.map((f) => {
+    const m = porGeocode[f.properties.codarea] || { nome: f.properties.nome, incidencia_4sem: null };
+    const classe = m.incidencia_4sem == null ? "sem" : `n${faixaDe(m.incidencia_4sem, FAIXAS_RMS)}`;
+    const d = aneis(f).map((anel) => "M" + anel.map(xy).join("L") + "Z").join("");
+    return `<path class="${classe}" d="${d}"><title>${m.nome}: ${valor(m)} por 100 mil</title></path>`;
+  }).join("");
+
+  // tabela ao lado: nome de cada município (o mapa sozinho não cabe rótulo) e valor exato
+  const ordem = [...dados.municipios].sort((a, b) => (b.incidencia_4sem ?? -1) - (a.incidencia_4sem ?? -1));
+  document.getElementById("tabela-rms").innerHTML = ordem.map((m) => {
+    const classe = m.incidencia_4sem == null ? "sem" : `n${faixaDe(m.incidencia_4sem, FAIXAS_RMS)}`;
+    return `<tr><td><i class="${classe}"></i>${m.nome}</td><td>${valor(m)}</td><td>${fmt(m.casos_4sem)}</td></tr>`;
+  }).join("");
+
+  document.getElementById("legenda-rms").textContent =
+    `Casos estimados por 100 mil habitantes, somados nas 4 semanas até ${fmtData(dados.semana_fim)}. ` +
+    "Fonte: InfoDengue; malha municipal: IBGE.";
+  legendaCores("legenda-cores-rms", FAIXAS_RMS, "casos por 100 mil hab. em 4 semanas");
+}
+
 let ultimosDados = null;
 
 function desenharGraficos() {
@@ -283,6 +327,7 @@ function desenharGraficos() {
   graficoDefasagem(ultimosDados.defasagem);
   graficoAnual(ultimosDados.anual);
   mapaCalor(ultimosDados.calor);
+  mapaRms(ultimosDados.rms, ultimosDados.malha);
 }
 
 // ---------- tema claro/escuro ----------
@@ -324,6 +369,8 @@ async function carregar() {
     opcional(`/canal-endemico?doenca=${doenca}`),
     opcional(`/correlacao-defasagem?doenca=${doenca}`),
     opcional(`/mapa-calor?doenca=${doenca}`),
+    opcional(`/municipios?doenca=${doenca}`),
+    carregarMalha(),
   ]);
   try {
     const [resumo, curva, chuva, anual] = await Promise.all([
@@ -332,9 +379,9 @@ async function carregar() {
       buscar(`/clima-vs-casos?doenca=${doenca}&desde=${doisAnosAtras}`),
       buscar(`/anual?doenca=${doenca}`),
     ]);
-    const [canal, defasagem, calor] = await extras;
+    const [canal, defasagem, calor, rms, malha] = await extras;
     if (pedido !== ultimoPedido) return; // chegou atrasada: já tem um pedido mais novo
-    ultimosDados = { curva, chuva, anual, canal, defasagem, calor };
+    ultimosDados = { curva, chuva, anual, canal, defasagem, calor, rms, malha };
     preencherKpis(resumo, curva.previsao);
     desenharGraficos();
   } catch (e) {
