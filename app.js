@@ -201,6 +201,7 @@ async function carregar() {
   const doenca = document.querySelector('input[name="doenca"]:checked').value;
   const doisAnosAtras = new Date(Date.now() - 2 * 365 * 864e5).toISOString().slice(0, 10);
   const umAnoAtras = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+  caixaErro.hidden = true;
   try {
     const [resumo, curva, chuva, anual] = await Promise.all([
       buscar(`/resumo?doenca=${doenca}`),
@@ -215,9 +216,11 @@ async function carregar() {
   } catch (e) {
     if (pedido !== ultimoPedido) return;
     console.error(e);
-    alert("Não consegui carregar os dados. A API está no ar e o ETL já rodou?");
+    caixaErro.hidden = false; // aviso dentro da página, no lugar do alert() que travava a tela
   }
 }
 
+const caixaErro = document.getElementById("erro");
+document.getElementById("tentar-de-novo").addEventListener("click", carregar);
 document.getElementById("doenca").addEventListener("change", carregar);
 carregar();

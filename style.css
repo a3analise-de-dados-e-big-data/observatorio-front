@@ -226,6 +226,35 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
 .kpi[data-nivel="3"] .escala i:nth-child(-n+3),
 .kpi[data-nivel="4"] .escala i:nth-child(-n+4) { background: var(--nivel); }
 
+/* aviso de erro ao carregar (fica no lugar do alert) */
+.erro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 14px 20px;
+  border: 1px solid var(--vermelho);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--cartao);
+}
+.erro[hidden] { display: none; }
+.erro p { margin: 0; }
+.erro button {
+  flex: none;
+  padding: 8px 16px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--abas-fundo);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.erro button:hover { border-color: var(--suave); }
+.erro button:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+
 .painel {
   background: var(--cartao);
   border: 1px solid var(--borda);

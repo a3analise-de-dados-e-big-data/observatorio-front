@@ -44,6 +44,11 @@
   </header>
 
   <main>
+    <div class="erro" id="erro" role="alert" hidden>
+      <p>Não consegui carregar os dados. A API pode estar fora do ar ou o ETL ainda não rodou.</p>
+      <button type="button" id="tentar-de-novo">Tentar de novo</button>
+    </div>
+
     <section class="kpis">
       <article class="kpi">
         <h2 class="kpi-rotulo">Previsão · próximas 4 semanas</h2>
