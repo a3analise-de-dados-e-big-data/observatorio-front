@@ -122,9 +122,12 @@
       <h2>Região Metropolitana: incidência nas últimas 4 semanas</h2>
       <p class="legenda" id="legenda-rms"></p>
       <div class="rms">
-        <svg id="mapa-rms" role="img" aria-labelledby="tabela-rms-titulo"></svg>
+        <div class="rms-mapa">
+          <svg id="mapa-rms" role="img" aria-labelledby="tabela-rms-titulo"></svg>
+          <div class="dica" id="dica-rms" hidden></div>
+        </div>
         <table class="tabela-rms">
-          <caption id="tabela-rms-titulo">Incidência por município, maior primeiro</caption>
+          <caption id="tabela-rms-titulo">Incidência por município, maior primeiro. Passe o mouse para achar no mapa.</caption>
           <thead><tr><th scope="col">Município</th><th scope="col">Por 100 mil</th><th scope="col">Casos est.</th></tr></thead>
           <tbody id="tabela-rms"></tbody>
         </table>

@@ -285,6 +285,11 @@ function mapaRms(dados, malha) {
   if (!dados || !malha) return;
   const porGeocode = Object.fromEntries(dados.municipios.map((m) => [String(m.geocode), m]));
   const valor = (m) => (m.incidencia_4sem == null ? "sem dado" : num1(m.incidencia_4sem));
+  const classeDe = (m) => (m.incidencia_4sem == null ? "sem" : `n${faixaDe(m.incidencia_4sem, FAIXAS_RMS)}`);
+  // posição no ranking (1 = maior incidência da RMS); empatados dividem a mesma posição
+  const inc = (m) => m.incidencia_4sem ?? -1;
+  const ordem = [...dados.municipios].sort((a, b) => inc(b) - inc(a));
+  const posicao = Object.fromEntries(ordem.map((m) => [String(m.geocode), 1 + ordem.filter((o) => inc(o) > inc(m)).length]));
 
   // projeção simples (longitude x cos(latitude), latitude): numa área pequena como a RMS não distorce
   const aneis = (f) => (f.geometry.type === "Polygon" ? f.geometry.coordinates : f.geometry.coordinates.flat());
@@ -293,24 +298,96 @@ function mapaRms(dados, malha) {
   const lats = pontos.map((p) => p[1]);
   const [lonMin, latMin, latMax] = [Math.min(...lons), Math.min(...lats), Math.max(...lats)];
   const cosLat = Math.cos(((latMin + latMax) / 2) * Math.PI / 180);
-  const escala = 600 / ((Math.max(...lons) - lonMin) * cosLat); // 600 de largura
-  const xy = ([lon, lat]) => `${((lon - lonMin) * cosLat * escala).toFixed(1)},${((latMax - lat) * escala).toFixed(1)}`;
+  const LARGURA = 600;
+  const escala = LARGURA / ((Math.max(...lons) - lonMin) * cosLat);
+  const xy = ([lon, lat]) => [(lon - lonMin) * cosLat * escala, (latMax - lat) * escala];
+
+  // centro da maior parte de cada município (fórmula da área de Gauss), onde vai o nome
+  function centro(anel) {
+    let area = 0, cx = 0, cy = 0;
+    for (let i = 0; i < anel.length - 1; i++) {
+      const [x0, y0] = anel[i], [x1, y1] = anel[i + 1];
+      const c = x0 * y1 - x1 * y0;
+      area += c; cx += (x0 + x1) * c; cy += (y0 + y1) * c;
+    }
+    const xs = anel.map((p) => p[0]);
+    return { x: cx / (3 * area), y: cy / (3 * area), area: Math.abs(area / 2),
+             largura: Math.max(...xs) - Math.min(...xs) };
+  }
+
+  const areas = [], rotulos = [];
+  const centros = {};
+  for (const f of malha.features) {
+    const geo = f.properties.codarea;
+    const m = porGeocode[geo] || { nome: f.properties.nome, incidencia_4sem: null };
+    const projetados = aneis(f).map((anel) => anel.map(xy));
+    const d = projetados.map((a) => "M" + a.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L") + "Z").join("");
+    areas.push(`<path class="${classeDe(m)}" data-geo="${geo}" d="${d}"></path>`);
+    const c = projetados.map(centro).reduce((a, b) => (b.area > a.area ? b : a));
+    centros[geo] = c;
+    // só escreve o nome se couber na largura do município (o resto aparece no hover e na tabela)
+    if (m.nome.length * 8.4 < c.largura * 0.9) { // ~8,4 de largura por letra com fonte 15
+      rotulos.push(`<text x="${c.x.toFixed(1)}" y="${c.y.toFixed(1)}">${m.nome}</text>`);
+    }
+  }
 
   const svg = document.getElementById("mapa-rms");
-  svg.setAttribute("viewBox", `0 0 600 ${((latMax - latMin) * escala).toFixed(0)}`);
-  svg.innerHTML = malha.features.map((f) => {
-    const m = porGeocode[f.properties.codarea] || { nome: f.properties.nome, incidencia_4sem: null };
-    const classe = m.incidencia_4sem == null ? "sem" : `n${faixaDe(m.incidencia_4sem, FAIXAS_RMS)}`;
-    const d = aneis(f).map((anel) => "M" + anel.map(xy).join("L") + "Z").join("");
-    return `<path class="${classe}" d="${d}"><title>${m.nome}: ${valor(m)} por 100 mil</title></path>`;
-  }).join("");
+  svg.setAttribute("viewBox", `0 0 ${LARGURA} ${((latMax - latMin) * escala).toFixed(0)}`);
+  svg.innerHTML = `<g class="areas">${areas.join("")}</g><g class="rotulos" aria-hidden="true">${rotulos.join("")}</g>`;
 
-  // tabela ao lado: nome de cada município (o mapa sozinho não cabe rótulo) e valor exato
-  const ordem = [...dados.municipios].sort((a, b) => (b.incidencia_4sem ?? -1) - (a.incidencia_4sem ?? -1));
-  document.getElementById("tabela-rms").innerHTML = ordem.map((m) => {
-    const classe = m.incidencia_4sem == null ? "sem" : `n${faixaDe(m.incidencia_4sem, FAIXAS_RMS)}`;
-    return `<tr><td><i class="${classe}"></i>${m.nome}</td><td>${valor(m)}</td><td>${fmt(m.casos_4sem)}</td></tr>`;
-  }).join("");
+  const tabela = document.getElementById("tabela-rms");
+  tabela.innerHTML = ordem.map((m) =>
+    `<tr data-geo="${m.geocode}" tabindex="0"><td><i class="${classeDe(m)}"></i>${m.nome}</td>` +
+    `<td>${valor(m)}</td><td>${fmt(m.casos_4sem)}</td></tr>`).join("");
+
+  // ---- interação: destaque + balão, ligando o mapa e a tabela ----
+  const dica = document.getElementById("dica-rms");
+  const caixa = svg.parentElement; // .rms-mapa, referência pra posição do balão
+
+  function destacar(geo, px, py) {
+    svg.querySelectorAll(".ativo").forEach((el) => el.classList.remove("ativo"));
+    tabela.querySelectorAll(".ativo").forEach((el) => el.classList.remove("ativo"));
+    if (!geo) { dica.hidden = true; return; }
+    const area = svg.querySelector(`path[data-geo="${geo}"]`);
+    area.classList.add("ativo");
+    area.parentNode.appendChild(area); // traz pra frente, senão a borda fica escondida pelos vizinhos
+    tabela.querySelector(`tr[data-geo="${geo}"]`)?.classList.add("ativo");
+
+    const m = porGeocode[geo];
+    dica.innerHTML = `<strong>${m.nome}</strong>` + (m.incidencia_4sem == null
+      ? "<span>sem dado das 4 semanas</span>"
+      : `<span>${valor(m)} por 100 mil hab.</span><span>${fmt(m.casos_4sem)} casos estimados</span>` +
+        `<span class="suave">${posicao[geo]}º de ${ordem.length} na RMS</span>`);
+    dica.hidden = false;
+    // sem posição do mouse (veio da tabela): aponta pro centro do município. getScreenCTM converte
+    // a coordenada do mapa pra tela já considerando a escala e a centralização do desenho no <svg>
+    if (px == null) {
+      const tela = new DOMPoint(centros[geo].x, centros[geo].y).matrixTransform(svg.getScreenCTM());
+      const r = caixa.getBoundingClientRect();
+      [px, py] = [tela.x - r.left, tela.y - r.top];
+    }
+    // não deixa o balão sair pela direita do mapa
+    const x = Math.min(px + 14, caixa.clientWidth - dica.offsetWidth - 4);
+    dica.style.left = `${Math.max(4, x)}px`;
+    dica.style.top = `${py + 14}px`;
+  }
+
+  // atribuição direta (onX = ...) e não addEventListener: o mapa é redesenhado ao trocar
+  // de doença e de tema, e assim não acumula ouvintes repetidos
+  svg.onpointermove = (e) => {
+    const area = e.target.closest("path");
+    const r = caixa.getBoundingClientRect();
+    destacar(area?.dataset.geo, e.clientX - r.left, e.clientY - r.top);
+  };
+  svg.onpointerleave = () => destacar(null);
+  // no celular o toque dispara pointerleave logo ao soltar o dedo; o click vem depois e reabre o balão
+  svg.onclick = svg.onpointermove;
+  tabela.onpointerover = (e) => destacar(e.target.closest("tr")?.dataset.geo);
+  tabela.onpointerleave = () => destacar(null);
+  for (const tr of tabela.rows) { // teclado: Tab pelas linhas também destaca no mapa
+    tr.onfocus = () => destacar(tr.dataset.geo);
+    tr.onblur = () => destacar(null);
+  }
 
   document.getElementById("legenda-rms").textContent =
     `Casos estimados por 100 mil habitantes, somados nas 4 semanas até ${fmtData(dados.semana_fim)}. ` +

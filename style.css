@@ -315,9 +315,43 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
   gap: 24px;
   align-items: start;
 }
-#mapa-rms { width: 100%; height: auto; max-height: 460px; }
-#mapa-rms path { fill: var(--c); stroke: var(--cartao); stroke-width: 1.5; stroke-linejoin: round; }
-#mapa-rms path:hover { stroke: var(--texto); }
+.rms-mapa { position: relative; }
+#mapa-rms { display: block; width: 100%; height: auto; max-height: 460px; }
+#mapa-rms path { fill: var(--c); stroke: var(--cartao); stroke-width: 1.5; stroke-linejoin: round; cursor: pointer; }
+#mapa-rms path.ativo { stroke: var(--texto); stroke-width: 2.5; }
+/* nome do município: cor de texto com contorno da cor do cartão, legível sobre qualquer azul */
+#mapa-rms text {
+  font-size: 15px;            /* em unidades do mapa (600 de largura); ele encolhe junto com o mapa */
+  font-weight: 600;
+  fill: var(--texto);
+  stroke: var(--cartao);
+  stroke-width: 4px;
+  paint-order: stroke;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+/* balão do hover */
+.dica {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 170px;
+  padding: 8px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--cartao);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .18);
+  font-size: .8rem;
+  pointer-events: none;
+}
+.dica[hidden] { display: none; }
+.dica .suave { color: var(--suave); }
+.tabela-rms tr[data-geo] { cursor: pointer; }
+.tabela-rms tr.ativo td { background: var(--abas-fundo); }
+.tabela-rms tr:focus-visible { outline: 2px solid var(--azul); outline-offset: -2px; }
 .tabela-rms { width: 100%; border-collapse: collapse; font-size: .82rem; }
 .tabela-rms caption { text-align: left; color: var(--suave); font-size: .78rem; padding-bottom: 6px; }
 .tabela-rms th { text-align: left; font-weight: 500; color: var(--suave); border-bottom: 1px solid var(--borda); padding: 4px 6px; }
