@@ -17,6 +17,7 @@
   --serie-azul: #2563eb;
   --serie-azul-2: #60a5fa;
   --serie-vermelha: #dc2626;
+  --faixa-normal: #6b7280;   /* cinza neutro: a faixa é fundo, não compete com as curvas */
   --grade: #e5e7eb;
 }
 
@@ -38,6 +39,7 @@
   --serie-azul: #4b8ef5;
   --serie-azul-2: #1f5bc4;
   --serie-vermelha: #ef4444;
+  --faixa-normal: #9aa3af;
   --grade: #262b35;
 }
 

@@ -23,6 +23,9 @@ async function buscar(caminho) {
   return r.json();
 }
 
+// pra partes extras do painel: se falhar, devolve null e só aquele pedaço some
+const opcional = (caminho) => buscar(caminho).catch((e) => { console.warn(e); return null; });
+
 // cores dos gráficos vêm do CSS, então mudam junto com o tema
 const cor = (nome) => getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
 const transparente = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, "0");
@@ -86,18 +89,33 @@ function preencherKpis(r, semanasPrevistas) {
   document.getElementById("kpi-acao").textContent = nivel.acao;
 }
 
-function graficoCurva(dados) {
+function graficoCurva(dados, canal) {
   const obs = dados.observados;
   const prev = dados.previsao;
   const labels = [...obs.map((o) => o.semana_inicio), ...prev.map((p) => p.semana_inicio)].map(fmtData);
   const vazio = (n) => Array(n).fill(null);
   const ultimo = obs.length ? obs[obs.length - 1].estimados : null;
 
+  // faixa normal (canal endêmico): q1 a q3 da mesma semana epidemiológica nos anos anteriores
+  const faixa = [];
+  if (canal) {
+    const porSemana = Object.fromEntries(canal.map((c) => [c.semana_epi, c]));
+    const semanas = [...obs, ...prev].map((p) => porSemana[p.semana_epi] || {});
+    faixa.push(
+      { label: "Faixa normal (início)", data: semanas.map((c) => c.q1), semLegenda: true, semDica: true,
+        borderColor: "transparent", pointRadius: 0, tension: 0.2 },
+      { label: "Faixa normal (metade do meio dos anos anteriores)", data: semanas.map((c) => c.q3),
+        faixaNormal: semanas, borderColor: "transparent", pointRadius: 0, tension: 0.2,
+        backgroundColor: transparente(cor("--faixa-normal"), 0.22), fill: "-1" },
+    );
+  }
+
   desenhar("graf-curva", {
     type: "line",
     data: {
       labels,
       datasets: [
+        ...faixa, // primeiro no array = desenhada atrás das curvas
         { label: "Casos notificados", data: [...obs.map((o) => o.notificados), ...vazio(prev.length)],
           borderColor: cor("--serie-azul"), borderWidth: 2, pointRadius: 0, tension: 0.2 },
         { label: "Estimativa InfoDengue (atraso de notificação)",
@@ -106,15 +124,27 @@ function graficoCurva(dados) {
         { label: "Previsão do nosso modelo", data: [...vazio(obs.length - 1), ultimo, ...prev.map((p) => p.previstos)],
           borderColor: cor("--serie-vermelha"), borderDash: [6, 4], borderWidth: 2, pointRadius: 3 },
         { label: "Mínimo", data: [...vazio(obs.length), ...prev.map((p) => p.minimo)],
-          borderColor: "transparent", pointRadius: 0 },
-        { label: "Máximo", data: [...vazio(obs.length), ...prev.map((p) => p.maximo)],
+          borderColor: "transparent", pointRadius: 0, semLegenda: true },
+        { label: "Máximo", data: [...vazio(obs.length), ...prev.map((p) => p.maximo)], semLegenda: true,
           borderColor: "transparent", backgroundColor: transparente(cor("--serie-vermelha"), 0.15), fill: "-1", pointRadius: 0 },
       ],
     },
     options: {
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
-      plugins: { legend: { labels: { filter: (i) => i.datasetIndex < 3 } } },
+      plugins: {
+        legend: { labels: { filter: (item, data) => !data.datasets[item.datasetIndex].semLegenda } },
+        tooltip: {
+          filter: (item) => !item.dataset.semDica,
+          callbacks: {
+            label: (ctx) => {
+              const f = ctx.dataset.faixaNormal;
+              return f ? `Faixa normal: ${fmt(f[ctx.dataIndex].q1)} a ${fmt(f[ctx.dataIndex].q3)}`
+                       : `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`;
+            },
+          },
+        },
+      },
       scales: { x: { ticks: { maxTicksLimit: 12 } }, y: { beginAtZero: true } },
     },
   });
@@ -172,7 +202,7 @@ let ultimosDados = null;
 
 function desenharGraficos() {
   if (!ultimosDados) return;
-  graficoCurva(ultimosDados.curva);
+  graficoCurva(ultimosDados.curva, ultimosDados.canal);
   graficoChuva(ultimosDados.chuva);
   graficoAnual(ultimosDados.anual);
 }
@@ -211,6 +241,10 @@ async function carregar() {
   const doisAnosAtras = new Date(Date.now() - 2 * 365 * 864e5).toISOString().slice(0, 10);
   const umAnoAtras = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
   caixaErro.hidden = true;
+  // os extras começam a baixar junto com os essenciais
+  const extras = Promise.all([
+    opcional(`/canal-endemico?doenca=${doenca}`),
+  ]);
   try {
     const [resumo, curva, chuva, anual] = await Promise.all([
       buscar(`/resumo?doenca=${doenca}`),
@@ -218,8 +252,9 @@ async function carregar() {
       buscar(`/clima-vs-casos?doenca=${doenca}&desde=${doisAnosAtras}`),
       buscar(`/anual?doenca=${doenca}`),
     ]);
+    const [canal] = await extras;
     if (pedido !== ultimoPedido) return; // chegou atrasada: já tem um pedido mais novo
-    ultimosDados = { curva, chuva, anual };
+    ultimosDados = { curva, chuva, anual, canal };
     preencherKpis(resumo, curva.previsao);
     desenharGraficos();
   } catch (e) {
