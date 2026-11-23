@@ -28,6 +28,11 @@ com `codarea` (código IBGE) e `nome` em `properties`. O mapa é desenhado em SV
 sem biblioteca de mapas. A malha do IBGE divide a Baía de Todos os Santos entre os municípios,
 por isso as ilhas aparecem "coladas" no continente.
 
+## Partes que dependem da API nova
+
+Canal endêmico, correlação por defasagem, mapa de calor e mapa da RMS usam endpoints novos.
+Se a API da VPS ainda não foi atualizada, essas partes somem e o resto do painel funciona normal.
+
 ## Como o front chega na API
 
 O `app.js` chama `/api/...` no próprio domínio do front. A Vercel repassa essas chamadas
