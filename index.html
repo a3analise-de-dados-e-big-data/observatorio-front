@@ -93,6 +93,13 @@
       <section class="painel">
         <h2>Chuva × casos: a alta costuma vir semanas depois</h2>
         <div class="grafico"><canvas id="graf-chuva"></canvas></div>
+        <div id="bloco-defasagem" hidden>
+          <h3>Correlação por defasagem</h3>
+          <p class="legenda">Quanto os casos de uma semana acompanham a chuva e a temperatura de
+            0 a 12 semanas antes (correlação de Spearman, desde 2015: 1 = sobem juntos, 0 = sem relação).
+            Correlação não prova causa: os dois também variam com a época do ano.</p>
+          <div class="grafico grafico-baixo"><canvas id="graf-defasagem"></canvas></div>
+        </div>
       </section>
       <section class="painel">
         <h2>Casos por ano</h2>

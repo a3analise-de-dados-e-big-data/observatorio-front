@@ -174,6 +174,41 @@ function graficoChuva(dados) {
   });
 }
 
+function graficoDefasagem(dados) {
+  // análise diagnóstica: em que defasagem a chuva/temperatura mais acompanham os casos
+  document.getElementById("bloco-defasagem").hidden = !dados;
+  if (!dados) return;
+  const num = (v) => (v == null ? "–" : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  desenhar("graf-defasagem", {
+    type: "bar",
+    data: {
+      labels: dados.map((d) => d.defasagem_semanas),
+      datasets: [
+        { label: "Chuva", data: dados.map((d) => d.chuva), backgroundColor: cor("--serie-azul"),
+          borderRadius: 3, borderSkipped: "start" },
+        { label: "Temperatura", data: dados.map((d) => d.temperatura), backgroundColor: cor("--serie-laranja"),
+          borderRadius: 3, borderSkipped: "start" },
+      ],
+    },
+    options: {
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: (itens) => `Clima de ${itens[0].label} semana(s) antes`,
+            label: (ctx) => `${ctx.dataset.label}: ${num(ctx.parsed.y)}`,
+          },
+        },
+      },
+      scales: {
+        x: { title: { display: true, text: "Semanas entre o clima e os casos" } },
+        y: { suggestedMin: -0.2, suggestedMax: 0.6, title: { display: true, text: "Correlação" } },
+      },
+    },
+  });
+}
+
 function graficoAnual(dados) {
   // ano em andamento: barra mais clara e marcado com *, pra não parecer ano fechado
   const parcial = dados.find((d) => d.parcial);
@@ -204,6 +239,7 @@ function desenharGraficos() {
   if (!ultimosDados) return;
   graficoCurva(ultimosDados.curva, ultimosDados.canal);
   graficoChuva(ultimosDados.chuva);
+  graficoDefasagem(ultimosDados.defasagem);
   graficoAnual(ultimosDados.anual);
 }
 
@@ -244,6 +280,7 @@ async function carregar() {
   // os extras começam a baixar junto com os essenciais
   const extras = Promise.all([
     opcional(`/canal-endemico?doenca=${doenca}`),
+    opcional(`/correlacao-defasagem?doenca=${doenca}`),
   ]);
   try {
     const [resumo, curva, chuva, anual] = await Promise.all([
@@ -252,9 +289,9 @@ async function carregar() {
       buscar(`/clima-vs-casos?doenca=${doenca}&desde=${doisAnosAtras}`),
       buscar(`/anual?doenca=${doenca}`),
     ]);
-    const [canal] = await extras;
+    const [canal, defasagem] = await extras;
     if (pedido !== ultimoPedido) return; // chegou atrasada: já tem um pedido mais novo
-    ultimosDados = { curva, chuva, anual, canal };
+    ultimosDados = { curva, chuva, anual, canal, defasagem };
     preencherKpis(resumo, curva.previsao);
     desenharGraficos();
   } catch (e) {
