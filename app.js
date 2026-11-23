@@ -34,10 +34,12 @@ function desenhar(id, config) {
   graficos[id] = new Chart(document.getElementById(id), config);
 }
 
-function preencherKpis(r) {
+function preencherKpis(r, semanasPrevistas) {
+  // sem previsão = lista vazia (uma previsão de 0 casos é um valor válido, não "sem dado")
   const p = r.previsao_4_semanas;
-  document.getElementById("kpi-previsao").textContent = fmt(p.total);
-  document.getElementById("kpi-previsao-faixa").innerHTML = p.total
+  const temPrevisao = semanasPrevistas.length > 0;
+  document.getElementById("kpi-previsao").textContent = temPrevisao ? fmt(p.total) : "–";
+  document.getElementById("kpi-previsao-faixa").innerHTML = temPrevisao
     ? `<span class="suave">Faixa provável:</span> ${fmt(p.minimo)} a ${fmt(p.maximo)}`
     : "Previsão indisponível";
 
@@ -61,7 +63,7 @@ function preencherKpis(r) {
       `<span class="suave">Deve fechar em</span> ~${fmt(est.casos)} <span class="suave">(${fmt(est.minimo)}–${fmt(est.maximo)})</span>`;
   }
   const media = r.media_historica_semana;
-  document.getElementById("kpi-semana-comparacao").innerHTML = media
+  document.getElementById("kpi-semana-comparacao").innerHTML = media != null
     ? `<span class="suave">Média dessa semana em outros anos:</span> ${fmt(media)}`
     : "";
 
@@ -211,7 +213,7 @@ async function carregar() {
     ]);
     if (pedido !== ultimoPedido) return; // chegou atrasada: já tem um pedido mais novo
     ultimosDados = { curva, chuva, anual };
-    preencherKpis(resumo);
+    preencherKpis(resumo, curva.previsao);
     desenharGraficos();
   } catch (e) {
     if (pedido !== ultimoPedido) return;
