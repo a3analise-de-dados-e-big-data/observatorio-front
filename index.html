@@ -107,6 +107,16 @@
         <div class="grafico"><canvas id="graf-anual"></canvas></div>
       </section>
     </div>
+
+    <section class="painel" id="painel-calor" hidden>
+      <h2>Mapa de calor: incidência por semana do ano</h2>
+      <p class="legenda">Cada quadrado é uma semana epidemiológica (colunas) de um ano (linhas). A cor é a
+        incidência estimada por 100 mil habitantes naquela semana. Passe o mouse para ver o valor.</p>
+      <div class="calor-rolagem">
+        <div class="calor" id="mapa-calor" role="img"></div>
+      </div>
+      <div class="legenda-cores" id="legenda-calor"></div>
+    </section>
   </main>
 
   <footer>

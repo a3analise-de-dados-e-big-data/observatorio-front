@@ -233,6 +233,47 @@ function graficoAnual(dados) {
   });
 }
 
+// ---------- mapas (cor por faixa de incidência, escala de um tom só: claro = pouco, escuro = muito) ----------
+const FAIXAS_CALOR = [1, 3, 6, 12, 25]; // incidência semanal por 100 mil hab.
+const faixaDe = (v, limites) => limites.filter((l) => v >= l).length; // 0 a limites.length
+const num1 = (v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+
+function legendaCores(id, limites, unidade) {
+  const rotulos = [`menos de ${limites[0]}`, ...limites.slice(0, -1).map((l, i) => `${l} a ${limites[i + 1]}`),
+                   `${limites[limites.length - 1]} ou mais`];
+  document.getElementById(id).innerHTML =
+    rotulos.map((r, i) => `<span><i class="n${i}"></i>${r}</span>`).join("") +
+    `<span><i class="sem"></i>sem dado</span><span class="suave">${unidade}</span>`;
+}
+
+function mapaCalor(dados) {
+  document.getElementById("painel-calor").hidden = !(dados && dados.length);
+  if (!dados || !dados.length) return;
+  const porAno = {};
+  for (const d of dados) (porAno[d.ano] ||= {})[d.semana_epi] = d.incidencia_100k;
+  const anos = Object.keys(porAno).map(Number).sort((a, b) => a - b);
+  const semanas = Array.from({ length: 53 }, (_, i) => i + 1);
+
+  // cabeçalho com algumas semanas, depois uma linha por ano
+  let html = "<span></span>" + semanas.map((s) => `<span class="calor-semana">${s === 1 || s % 10 === 0 ? s : ""}</span>`).join("");
+  for (const ano of anos) {
+    html += `<span class="calor-ano">${ano}</span>`;
+    for (const s of semanas) {
+      const v = porAno[ano][s];
+      html += v == null
+        ? "<i></i>"
+        : `<i class="n${faixaDe(v, FAIXAS_CALOR)}" title="${ano}, semana ${s}: ${num1(v)} por 100 mil"></i>`;
+    }
+  }
+  const grade = document.getElementById("mapa-calor");
+  grade.innerHTML = html;
+  // resumo em texto pra leitor de tela
+  const pico = dados.reduce((a, b) => ((b.incidencia_100k ?? -1) > (a.incidencia_100k ?? -1) ? b : a));
+  grade.setAttribute("aria-label", `Incidência semanal de ${anos[0]} a ${anos[anos.length - 1]}. ` +
+    `Maior valor: ${pico.ano}, semana ${pico.semana_epi}, ${num1(pico.incidencia_100k)} por 100 mil habitantes.`);
+  legendaCores("legenda-calor", FAIXAS_CALOR, "casos por 100 mil hab. na semana");
+}
+
 let ultimosDados = null;
 
 function desenharGraficos() {
@@ -241,6 +282,7 @@ function desenharGraficos() {
   graficoChuva(ultimosDados.chuva);
   graficoDefasagem(ultimosDados.defasagem);
   graficoAnual(ultimosDados.anual);
+  mapaCalor(ultimosDados.calor);
 }
 
 // ---------- tema claro/escuro ----------
@@ -281,6 +323,7 @@ async function carregar() {
   const extras = Promise.all([
     opcional(`/canal-endemico?doenca=${doenca}`),
     opcional(`/correlacao-defasagem?doenca=${doenca}`),
+    opcional(`/mapa-calor?doenca=${doenca}`),
   ]);
   try {
     const [resumo, curva, chuva, anual] = await Promise.all([
@@ -289,9 +332,9 @@ async function carregar() {
       buscar(`/clima-vs-casos?doenca=${doenca}&desde=${doisAnosAtras}`),
       buscar(`/anual?doenca=${doenca}`),
     ]);
-    const [canal, defasagem] = await extras;
+    const [canal, defasagem, calor] = await extras;
     if (pedido !== ultimoPedido) return; // chegou atrasada: já tem um pedido mais novo
-    ultimosDados = { curva, chuva, anual, canal, defasagem };
+    ultimosDados = { curva, chuva, anual, canal, defasagem, calor };
     preencherKpis(resumo, curva.previsao);
     desenharGraficos();
   } catch (e) {

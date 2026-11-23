@@ -19,6 +19,9 @@
   --serie-vermelha: #dc2626;
   --serie-laranja: #eb6834;  /* temperatura; par azul/laranja validado pra daltonismo */
   --faixa-normal: #6b7280;   /* cinza neutro: a faixa é fundo, não compete com as curvas */
+  /* escala dos mapas: azul de um tom só, do mais claro (pouco) ao mais escuro (muito) */
+  --seq-0: #cde2fb; --seq-1: #9ec5f4; --seq-2: #6da7ec; --seq-3: #3987e5; --seq-4: #1c5cab; --seq-5: #0d366b;
+  --sem-dado: #eceef2;
   --grade: #e5e7eb;
 }
 
@@ -42,6 +45,9 @@
   --serie-vermelha: #ef4444;
   --serie-laranja: #d95926;
   --faixa-normal: #9aa3af;
+  /* no escuro a escala inverte: pouco = perto do fundo (escuro), muito = claro */
+  --seq-0: #0d366b; --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6;
+  --sem-dado: #262b35;
   --grade: #262b35;
 }
 
@@ -281,6 +287,38 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
    assim a base dos dois fica alinhada mesmo quando só um tem legenda embaixo do título */
 .duas-colunas .painel { display: flex; flex-direction: column; }
 .duas-colunas .grafico { flex: 1 0 auto; }
+
+/* ---------- mapas ---------- */
+.n0 { --c: var(--seq-0); } .n1 { --c: var(--seq-1); } .n2 { --c: var(--seq-2); }
+.n3 { --c: var(--seq-3); } .n4 { --c: var(--seq-4); } .n5 { --c: var(--seq-5); }
+.sem { --c: var(--sem-dado); }
+
+/* mapa de calor: grade de 53 semanas por ano */
+.calor-rolagem { overflow-x: auto; }
+.calor {
+  display: grid;
+  grid-template-columns: 40px repeat(53, minmax(12px, 1fr));
+  gap: 2px;
+  min-width: 760px;
+  font-size: .72rem;
+  color: var(--suave);
+}
+.calor i { height: 16px; border-radius: 2px; background: var(--c, transparent); }
+.calor i[title]:hover { outline: 2px solid var(--texto); outline-offset: -1px; }
+.calor-ano { align-self: center; }
+.calor-semana { text-align: center; }
+
+.legenda-cores {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font-size: .78rem;
+}
+.legenda-cores span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda-cores i { width: 14px; height: 14px; border-radius: 3px; background: var(--c); }
+.legenda-cores .suave { color: var(--suave); }
 
 footer {
   max-width: 1200px;
