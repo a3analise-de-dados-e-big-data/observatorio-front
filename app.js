@@ -62,10 +62,17 @@ function preencherKpis(r, semanasPrevistas) {
     document.getElementById("kpi-semana-estimativa").innerHTML =
       `<span class="suave">Deve fechar em</span> ~${fmt(est.casos)} <span class="suave">(${fmt(est.minimo)}–${fmt(est.maximo)})</span>`;
   }
-  const media = r.media_historica_semana;
-  document.getElementById("kpi-semana-comparacao").innerHTML = media != null
-    ? `<span class="suave">Média dessa semana em outros anos:</span> ${fmt(media)}`
-    : "";
+  // canal endêmico: compara a ESTIMATIVA (a semana ainda não fechou) com a faixa normal
+  const c = r.canal_endemico_semana;
+  let comparacao = "";
+  if (c && c.q1 != null) {
+    const situacao = est.casos == null ? ""
+      : est.casos > c.q3 ? " · acima do normal"
+      : est.casos < c.q1 ? " · abaixo do normal"
+      : " · dentro do normal";
+    comparacao = `<span class="suave">Faixa normal dessa semana:</span> ${fmt(c.q1)} a ${fmt(c.q3)}${situacao}`;
+  }
+  document.getElementById("kpi-semana-comparacao").innerHTML = comparacao;
 
   document.getElementById("kpi-incidencia").textContent =
     r.incidencia_100k == null ? "–" : r.incidencia_100k.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
