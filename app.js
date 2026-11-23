@@ -192,7 +192,12 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
 
 botaoTema.setAttribute("aria-checked", String(document.documentElement.dataset.tema === "escuro"));
 
+// cada carregar() ganha um número; se o usuário trocar de doença antes da resposta chegar,
+// a resposta velha é ignorada (senão ela poderia chegar depois e desenhar a doença errada)
+let ultimoPedido = 0;
+
 async function carregar() {
+  const pedido = ++ultimoPedido;
   const doenca = document.querySelector('input[name="doenca"]:checked').value;
   const doisAnosAtras = new Date(Date.now() - 2 * 365 * 864e5).toISOString().slice(0, 10);
   const umAnoAtras = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
@@ -203,10 +208,12 @@ async function carregar() {
       buscar(`/clima-vs-casos?doenca=${doenca}&desde=${doisAnosAtras}`),
       buscar(`/anual?doenca=${doenca}`),
     ]);
+    if (pedido !== ultimoPedido) return; // chegou atrasada: já tem um pedido mais novo
     ultimosDados = { curva, chuva, anual };
     preencherKpis(resumo);
     desenharGraficos();
   } catch (e) {
+    if (pedido !== ultimoPedido) return;
     console.error(e);
     alert("Não consegui carregar os dados. A API está no ar e o ETL já rodou?");
   }
