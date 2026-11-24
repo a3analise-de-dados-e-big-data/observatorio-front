@@ -17,6 +17,11 @@
   --serie-azul: #2563eb;
   --serie-azul-2: #60a5fa;
   --serie-vermelha: #dc2626;
+  --serie-laranja: #eb6834;  /* temperatura; par azul/laranja validado pra daltonismo */
+  --faixa-normal: #6b7280;   /* cinza neutro: a faixa é fundo, não compete com as curvas */
+  /* escala dos mapas: azul de um tom só, do mais claro (pouco) ao mais escuro (muito) */
+  --seq-0: #cde2fb; --seq-1: #9ec5f4; --seq-2: #6da7ec; --seq-3: #3987e5; --seq-4: #1c5cab; --seq-5: #0d366b;
+  --sem-dado: #eceef2;
   --grade: #e5e7eb;
 }
 
@@ -38,6 +43,11 @@
   --serie-azul: #4b8ef5;
   --serie-azul-2: #1f5bc4;
   --serie-vermelha: #ef4444;
+  --serie-laranja: #d95926;
+  --faixa-normal: #9aa3af;
+  /* no escuro a escala inverte: pouco = perto do fundo (escuro), muito = claro */
+  --seq-0: #0d366b; --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6;
+  --sem-dado: #262b35;
   --grade: #262b35;
 }
 
@@ -226,6 +236,35 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
 .kpi[data-nivel="3"] .escala i:nth-child(-n+3),
 .kpi[data-nivel="4"] .escala i:nth-child(-n+4) { background: var(--nivel); }
 
+/* aviso de erro ao carregar (fica no lugar do alert) */
+.erro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 14px 20px;
+  border: 1px solid var(--vermelho);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--cartao);
+}
+.erro[hidden] { display: none; }
+.erro p { margin: 0; }
+.erro button {
+  flex: none;
+  padding: 8px 16px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--abas-fundo);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.erro button:hover { border-color: var(--suave); }
+.erro button:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+
 .painel {
   background: var(--cartao);
   border: 1px solid var(--borda);
@@ -234,8 +273,10 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
   margin-bottom: 24px;
 }
 .painel h2 { margin: 0; font-size: 1.1rem; }
+.painel h3 { margin: 20px 0 0; font-size: .95rem; }
 .legenda { margin: 4px 0 12px; color: var(--suave); font-size: .85rem; }
 .grafico { position: relative; height: 320px; }
+.grafico-baixo { height: 220px; }
 
 .duas-colunas {
   display: grid;
@@ -246,6 +287,89 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
    assim a base dos dois fica alinhada mesmo quando só um tem legenda embaixo do título */
 .duas-colunas .painel { display: flex; flex-direction: column; }
 .duas-colunas .grafico { flex: 1 0 auto; }
+
+/* ---------- mapas ---------- */
+.n0 { --c: var(--seq-0); } .n1 { --c: var(--seq-1); } .n2 { --c: var(--seq-2); }
+.n3 { --c: var(--seq-3); } .n4 { --c: var(--seq-4); } .n5 { --c: var(--seq-5); }
+.sem { --c: var(--sem-dado); }
+
+/* mapa de calor: grade de 53 semanas por ano */
+.calor-rolagem { overflow-x: auto; }
+.calor {
+  display: grid;
+  grid-template-columns: 40px repeat(53, minmax(12px, 1fr));
+  gap: 2px;
+  min-width: 760px;
+  font-size: .72rem;
+  color: var(--suave);
+}
+.calor i { height: 16px; border-radius: 2px; background: var(--c, transparent); }
+.calor i[title]:hover { outline: 2px solid var(--texto); outline-offset: -1px; }
+.calor-ano { align-self: center; }
+.calor-semana { text-align: center; }
+
+/* mapa da RMS + tabela ao lado */
+.rms {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+  align-items: start;
+}
+.rms-mapa { position: relative; }
+#mapa-rms { display: block; width: 100%; height: auto; max-height: 460px; }
+#mapa-rms path { fill: var(--c); stroke: var(--cartao); stroke-width: 1.5; stroke-linejoin: round; cursor: pointer; }
+#mapa-rms path.ativo { stroke: var(--texto); stroke-width: 2.5; }
+/* nome do município: cor de texto com contorno da cor do cartão, legível sobre qualquer azul */
+#mapa-rms text {
+  font-size: 15px;            /* em unidades do mapa (600 de largura); ele encolhe junto com o mapa */
+  font-weight: 600;
+  fill: var(--texto);
+  stroke: var(--cartao);
+  stroke-width: 4px;
+  paint-order: stroke;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+/* balão do hover */
+.dica {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 170px;
+  padding: 8px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--cartao);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .18);
+  font-size: .8rem;
+  pointer-events: none;
+}
+.dica[hidden] { display: none; }
+.dica .suave { color: var(--suave); }
+.tabela-rms tr[data-geo] { cursor: pointer; }
+.tabela-rms tr.ativo td { background: var(--abas-fundo); }
+.tabela-rms tr:focus-visible { outline: 2px solid var(--azul); outline-offset: -2px; }
+.tabela-rms { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.tabela-rms caption { text-align: left; color: var(--suave); font-size: .78rem; padding-bottom: 6px; }
+.tabela-rms th { text-align: left; font-weight: 500; color: var(--suave); border-bottom: 1px solid var(--borda); padding: 4px 6px; }
+.tabela-rms td { padding: 4px 6px; border-bottom: 1px solid var(--borda); }
+.tabela-rms th:not(:first-child), .tabela-rms td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.tabela-rms td i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; background: var(--c); }
+
+.legenda-cores {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font-size: .78rem;
+}
+.legenda-cores span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda-cores i { width: 14px; height: 14px; border-radius: 3px; background: var(--c); }
+.legenda-cores .suave { color: var(--suave); }
 
 footer {
   max-width: 1200px;
@@ -268,4 +392,5 @@ footer {
 @media (max-width: 600px) {
   .cabecalho, main, footer { padding-left: 16px; padding-right: 16px; }
   .duas-colunas { grid-template-columns: 1fr; }
+  .rms { grid-template-columns: 1fr; }
 }

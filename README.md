@@ -11,7 +11,27 @@ Os dados vêm da API, que roda na VPS e fica no repositório
 | `index.html` | Estrutura do painel |
 | `app.js` | Busca os dados em `/api/...` e desenha os gráficos |
 | `style.css` | Visual |
+| `rms.geojson` | Contorno dos 13 municípios da Região Metropolitana de Salvador (malha do IBGE) |
 | `vercel.json` | Repassa `/api/*` pra API na VPS |
+
+## De onde vem o `rms.geojson`
+
+Malha municipal do IBGE (API de malhas v3, qualidade máxima), filtrada para os 13 municípios da
+Região Metropolitana de Salvador (RM 04201 na API de localidades do IBGE):
+
+```bash
+curl -o ba.geojson "https://servicodados.ibge.gov.br/api/v3/malhas/estados/29?intrarregiao=municipio&formato=application/vnd.geo%2Bjson&qualidade=maxima"
+```
+
+Depois só os municípios da lista em `etl/extract.py` (repositório da API) ficam no arquivo,
+com `codarea` (código IBGE) e `nome` em `properties`. O mapa é desenhado em SVG pelo `app.js`,
+sem biblioteca de mapas. A malha do IBGE divide a Baía de Todos os Santos entre os municípios,
+por isso as ilhas aparecem "coladas" no continente.
+
+## Partes que dependem da API nova
+
+Canal endêmico, correlação por defasagem, mapa de calor e mapa da RMS usam endpoints novos.
+Se a API da VPS ainda não foi atualizada, essas partes somem e o resto do painel funciona normal.
 
 ## Como o front chega na API
 

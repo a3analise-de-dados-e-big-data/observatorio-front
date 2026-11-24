@@ -44,6 +44,11 @@
   </header>
 
   <main>
+    <div class="erro" id="erro" role="alert" hidden>
+      <p>Não consegui carregar os dados. A API pode estar fora do ar ou o ETL ainda não rodou.</p>
+      <button type="button" id="tentar-de-novo">Tentar de novo</button>
+    </div>
+
     <section class="kpis">
       <article class="kpi">
         <h2 class="kpi-rotulo">Previsão · próximas 4 semanas</h2>
@@ -86,8 +91,15 @@
 
     <div class="duas-colunas">
       <section class="painel">
-        <h2>Os casos sobem semanas depois da chuva</h2>
+        <h2>Chuva × casos: a alta costuma vir semanas depois</h2>
         <div class="grafico"><canvas id="graf-chuva"></canvas></div>
+        <div id="bloco-defasagem" hidden>
+          <h3>Correlação por defasagem</h3>
+          <p class="legenda">Quanto os casos de uma semana acompanham a chuva e a temperatura de
+            0 a 12 semanas antes (correlação de Spearman, desde 2015: 1 = sobem juntos, 0 = sem relação).
+            Correlação não prova causa: os dois também variam com a época do ano.</p>
+          <div class="grafico grafico-baixo"><canvas id="graf-defasagem"></canvas></div>
+        </div>
       </section>
       <section class="painel">
         <h2>Casos por ano</h2>
@@ -95,6 +107,33 @@
         <div class="grafico"><canvas id="graf-anual"></canvas></div>
       </section>
     </div>
+
+    <section class="painel" id="painel-calor" hidden>
+      <h2>Mapa de calor: incidência por semana do ano</h2>
+      <p class="legenda">Cada quadrado é uma semana epidemiológica (colunas) de um ano (linhas). A cor é a
+        incidência estimada por 100 mil habitantes naquela semana. Passe o mouse para ver o valor.</p>
+      <div class="calor-rolagem">
+        <div class="calor" id="mapa-calor" role="img"></div>
+      </div>
+      <div class="legenda-cores" id="legenda-calor"></div>
+    </section>
+
+    <section class="painel" id="painel-rms" hidden>
+      <h2>Região Metropolitana: incidência nas últimas 4 semanas</h2>
+      <p class="legenda" id="legenda-rms"></p>
+      <div class="rms">
+        <div class="rms-mapa">
+          <svg id="mapa-rms" role="img" aria-labelledby="tabela-rms-titulo"></svg>
+          <div class="dica" id="dica-rms" hidden></div>
+        </div>
+        <table class="tabela-rms">
+          <caption id="tabela-rms-titulo">Incidência por município, maior primeiro. Passe o mouse para achar no mapa.</caption>
+          <thead><tr><th scope="col">Município</th><th scope="col">Por 100 mil</th><th scope="col">Casos est.</th></tr></thead>
+          <tbody id="tabela-rms"></tbody>
+        </table>
+      </div>
+      <div class="legenda-cores" id="legenda-cores-rms"></div>
+    </section>
   </main>
 
   <footer>
@@ -102,7 +141,7 @@
     InfoDengue parou de publicar a série de Salvador em fevereiro de 2024. Chuva e temperatura
     da reanálise ERA5 (Copernicus), obtidas pelo Open-Meteo. A previsão de 4 semanas é de um modelo
     próprio (regressão linear sobre casos, chuva e temperatura). Dados agregados por cidade e semana,
-    sem nenhuma informação pessoal (LGPD). Trabalho A3 · Análise de Dados e Big Data · UNIFACS.
+    sem nenhuma informação pessoal (LGPD). Malha municipal do IBGE. Trabalho A3 · Análise de Dados e Big Data · UNIFACS.
   </footer>
 
   <script src="app.js"></script>
