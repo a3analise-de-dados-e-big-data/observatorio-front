@@ -319,7 +319,8 @@ function mapaRms(dados, malha) {
   const centros = {};
   for (const f of malha.features) {
     const geo = f.properties.codarea;
-    const m = porGeocode[geo] || { nome: f.properties.nome, incidencia_4sem: null };
+    // município da malha que não veio na API: entra como "sem dado" (e o balão do hover também acha ele)
+    const m = (porGeocode[geo] ||= { nome: f.properties.nome, incidencia_4sem: null, casos_4sem: null });
     const projetados = aneis(f).map((anel) => anel.map(xy));
     const d = projetados.map((a) => "M" + a.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L") + "Z").join("");
     areas.push(`<path class="${classeDe(m)}" data-geo="${geo}" d="${d}"></path>`);
